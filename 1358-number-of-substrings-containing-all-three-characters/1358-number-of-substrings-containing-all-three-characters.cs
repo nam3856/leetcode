@@ -4,22 +4,17 @@ public class Solution {
         int end = 0;
         int answer = 0;
         
-        var abc = new Dictionary<char, int>();
+        var abc = new int[3];
 
         while(end < s.Length){
-            char newLetter = s[end];
+            int newLetter = s[end] - 'a';
 
-            if(!abc.ContainsKey(newLetter)){
-                abc.Add(newLetter,0);
-            }
             abc[newLetter]++;
 
-            while(abc.Count==3){
+            while(abc[0]>0 && abc[1]>0 && abc[2]>0){
                 answer += s.Length - end;
-                char startLetter = s[start];
-                if(--abc[startLetter]==0){
-                    abc.Remove(startLetter);
-                }
+                int startLetter = s[start] - 'a';
+                --abc[startLetter];
                 start++;
             }
             end++;
