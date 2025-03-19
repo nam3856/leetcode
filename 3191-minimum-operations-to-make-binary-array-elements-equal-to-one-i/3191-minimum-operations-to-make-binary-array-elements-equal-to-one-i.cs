@@ -2,26 +2,17 @@ public class Solution
 {
     public int MinOperations(int[] nums)
     {
-        var linkedList = new LinkedList<int>();
-        int count = 0;
+        int flips = 0;
 
-        for (int i = 0; i < nums.Length; i++)
-        {
-            while (linkedList.Count > 0 && i > linkedList.First.Value + 2)
-            {
-                linkedList.RemoveFirst();
-            }
-
-            if ((nums[i] + linkedList.Count) % 2 == 0)
-            {
-                if (i + 2 >= nums.Length)
-                {
-                    return -1;
-                }
-                count++;
-                linkedList.AddLast(i);
+        for(int i=2;i<nums.Length;i++){
+            if(nums[i-2]==0){
+                nums[i-2] = 1;
+                nums[i-1] ^= 1;
+                nums[i] ^= 1;
+                flips++;
             }
         }
-        return count;
+        if(nums.Sum() == nums.Length) return flips;
+        return -1;
     }
 }
