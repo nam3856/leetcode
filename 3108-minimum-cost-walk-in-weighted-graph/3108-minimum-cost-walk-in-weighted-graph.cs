@@ -1,58 +1,73 @@
 public class Solution {
+    // Union-Find를 위한 부모 배열과 깊이 배열
+    private int[] parent;
+    private int[] depth;
+
     public int[] MinimumCost(int n, int[][] edges, int[][] queries) {
-        // 인접 리스트 생성 (각 노드별 이웃과 가중치 정보를 저장)
-        List<List<(int neighbor, int weight)>> adjList = new List<List<(int, int)>>();
+        // 각 노드가 독립된 컴포넌트에 속하도록 -1로 초기화
+        parent = Enumerable.Repeat(-1, n).ToArray();
+        depth = new int[n]; // 기본값 0
+        
+        // 각 컴포넌트의 비용을 모두 1로 초기화 (비트가 모두 1인 상태 = uint.MaxValue)
+        uint[] componentCost = new uint[n];
         for (int i = 0; i < n; i++) {
-            adjList.Add(new List<(int, int)>());
+            componentCost[i] = uint.MaxValue;
         }
+        
+        // 간선 정보를 통해 연결 컴포넌트를 구성
         foreach (var edge in edges) {
-            int u = edge[0], v = edge[1], w = edge[2];
-            adjList[u].Add((v, w));
-            adjList[v].Add((u, w));
+            Union(edge[0], edge[1]);
         }
-
-        bool[] visited = new bool[n];
-        int[] components = new int[n];
-        List<int> componentCost = new List<int>();
-
-        int componentId = 0;
-        // 방문하지 않은 각 노드에 대해 DFS를 수행하여 컴포넌트별 비용 계산
-        for (int node = 0; node < n; node++) {
-            if (!visited[node]) {
-                componentCost.Add(GetComponentCost(node, adjList, visited, components, componentId));
-                componentId++;
-            }
+        
+        // 각 간선에 대해 해당 간선의 가중치와 컴포넌트 비용의 비트 AND 연산 수행
+        foreach (var edge in edges) {
+            int root = Find(edge[0]);
+            // edge[2]를 uint로 캐스팅하여 AND 연산 수행
+            componentCost[root] &= (uint)edge[2];
         }
-
+        
         List<int> answer = new List<int>();
-        // 각 쿼리에 대해 시작점과 끝점이 같은 컴포넌트에 속하는지 확인 후 결과 저장
+        // 각 쿼리에 대해 시작점과 끝점이 같은 컴포넌트에 속하는지 확인
         foreach (var query in queries) {
             int start = query[0];
             int end = query[1];
-
-            if (components[start] == components[end]) {
-                answer.Add(componentCost[components[start]]);
-            } else {
+            
+            if (Find(start) != Find(end)) {
                 answer.Add(-1);
+            } else {
+                int root = Find(start);
+                // 결과를 int로 캐스팅하여 반환
+                answer.Add((int)componentCost[root]);
             }
         }
-
+        
         return answer.ToArray();
     }
-
-    // DFS를 통해 컴포넌트의 비용을 계산하는 도우미 함수
-    private int GetComponentCost(int node, List<List<(int, int)>> adjList, bool[] visited, int[] components, int componentId) {
-        int currentCost = int.MaxValue; // 모든 비트가 1인 상태 (C++의 INT_MAX와 동일)
-        components[node] = componentId;
-        visited[node] = true;
-
-        foreach (var (neighbor, weight) in adjList[node]) {
-            // 간선 가중치와 현재 비용의 비트 AND 연산
-            currentCost &= weight;
-            if (!visited[neighbor]) {
-                currentCost &= GetComponentCost(neighbor, adjList, visited, components, componentId);
-            }
+    
+    // Find 함수: 경로 압축을 적용하여 노드의 루트를 찾음
+    private int Find(int node) {
+        if (parent[node] == -1) return node;
+        return parent[node] = Find(parent[node]);
+    }
+    
+    // Union 함수: 두 노드의 컴포넌트를 합침 (깊이에 따라 병합)
+    private void Union(int node1, int node2) {
+        int root1 = Find(node1);
+        int root2 = Find(node2);
+        
+        // 이미 같은 컴포넌트에 속해 있다면 아무 작업도 하지 않음
+        if (root1 == root2) return;
+        
+        // 깊이가 더 낮은 트리를 깊이가 높은 트리 아래에 붙임
+        if (depth[root1] < depth[root2]) {
+            int temp = root1;
+            root1 = root2;
+            root2 = temp;
         }
-        return currentCost;
+        
+        parent[root2] = root1;
+        if (depth[root1] == depth[root2]) {
+            depth[root1]++;
+        }
     }
 }
